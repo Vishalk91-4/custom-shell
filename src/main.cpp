@@ -10,7 +10,7 @@ int main() {
   // TODO: Uncomment the code below to pass the first stage
   std::cout << "$ ";
   string command;
-  cin >> command;
+  getline(cin, command);
   cout << "\n";
   cout << command<< ": command not found\n";
 }
