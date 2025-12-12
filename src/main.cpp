@@ -17,11 +17,11 @@ int main() {
     std::cout << "$ ";
     string command;
     getline(cin, command);
-    if (count(shell_commands.begin(), shell_commands.end(), command.substr(0, 4)) > 0) {
-      cout << command.substr(0, 4) << " is a shell buitlin\n";
+    if (count(shell_commands.begin(), shell_commands.end(), command.substr(5, 4)) > 0) {
+      cout << command.substr(5, 4) << " is a shell buitlin\n";
       continue;
     } else {
-      cout << command.substr(0, 4) << ": not found\n";
+      cout << command.substr(5, 4) << ": not found\n";
       continue;
     }
     if (command.substr(0, 4) == shell_commands[1]) {
