@@ -17,12 +17,14 @@ int main() {
     std::cout << "$ ";
     string command;
     getline(cin, command);
-    if (count(shell_commands.begin(), shell_commands.end(), command.substr(5)) > 0) {
-      cout << command.substr(5) << " is a shell builtin\n";
-      continue;
-    } else {
-      cout << command.substr(5) << ": not found\n";
-      continue;
+    if (command.substr(0, 4) == "type") {
+      if (count(shell_commands.begin(), shell_commands.end(), command.substr(5)) > 0) {
+        cout << command.substr(5) << " is a shell builtin\n";
+        continue;
+      } else {
+        cout << command.substr(5) << ": not found\n";
+        continue;
+      }
     }
     if (command.substr(0, 4) == shell_commands[1]) {
       cout << command.substr(5) << "\n";
