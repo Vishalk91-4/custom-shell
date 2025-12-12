@@ -18,7 +18,7 @@ int main() {
     string command;
     getline(cin, command);
     if (count(shell_commands.begin(), shell_commands.end(), command.substr(5, 4)) > 0) {
-      cout << command.substr(5, 4) << " is a shell buitlin\n";
+      cout << command.substr(5, 4) << " is a shell builtin\n";
       continue;
     } else {
       cout << command.substr(5, 4) << ": not found\n";
