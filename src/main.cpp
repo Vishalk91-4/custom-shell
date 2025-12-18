@@ -42,7 +42,6 @@ string search_path(const string &cmd) {
 
 // ------------------------ ECHO BUILTIN ------------------------
 void handle_echo(const vector<string> &args) {
-  // print everything after echo
   for (size_t i = 1; i < args.size(); i++) {
     cout << args[i];
     if (i + 1 < args.size()) cout << " ";
@@ -81,30 +80,28 @@ char** build_exec_argv(const vector<string> &args) {
 void run_external(vector<string> &args) {
   if (args.empty()) return;
   string cmd = args[0];
-  string path = search_path(cmd);
-  if (path.empty()) {
+  string fullpath = search_path(cmd);
+  if (fullpath.empty()) {
     cout << cmd << ": command not found\n";
     return;
   }
-  // replace args[0] with full path
-  args[0] = path;
   char **exec_args = build_exec_argv(args);
   pid_t pid = fork();
   if (pid == 0) {
-    execvp(exec_args[0], exec_args);
-    perror("execvp");  // only if exec fails
+    execvp(fullpath.c_str(), exec_args);
+    perror("execvp");
     exit(1);
   }
   int status;
   waitpid(pid, &status, 0);
-  // free strdup'd memory
   for (size_t i = 0; exec_args[i] != NULL; i++) free(exec_args[i]);
   delete[] exec_args;
 }
 
+
 // ------------------------ MAIN LOOP ------------------------
 int main() {
-  cout << unitbuf;   // auto flush
+  cout << unitbuf;
   cerr << unitbuf;
   while (true) {
     cout << "$ ";
