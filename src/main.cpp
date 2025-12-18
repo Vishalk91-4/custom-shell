@@ -1,108 +1,122 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <unistd.h>
 #include <sstream>
+#include <unistd.h>
+#include <sys/wait.h>
 #include <cstring>
 using namespace std;
 
-// --------------------------------------------------
-// Builtin Commands List
-// --------------------------------------------------
+// ------------------------ BUILTINS ------------------------
 vector<string> builtins = {"exit", "echo", "type"};
 
-// Check if string is a builtin
 bool is_builtin(const string &cmd) {
-    for (const string &b : builtins)
-        if (cmd == b) return true;
-    return false;
+  for (const string &b : builtins)
+    if (cmd == b) return true;
+  return false;
 }
 
-// --------------------------------------------------
-// Echo builtin implementation
-// --------------------------------------------------
-void handle_echo(const string &command) {
-    // Remove "echo " (5 chars)
-    cout << command.substr(5) << "\n";
+// ------------------------ TOKENIZER ------------------------
+vector<string> tokenize(const string &line) {
+  stringstream ss(line);
+  vector<string> tokens;
+  string tok;
+  while (ss >> tok)
+    tokens.push_back(tok);
+  return tokens;
 }
 
-// --------------------------------------------------
-// Search PATH for an executable
-// --------------------------------------------------
+// ------------------------ PATH SEARCH ------------------------
 string search_path(const string &cmd) {
-    char *path_env = getenv("PATH");
-    if (!path_env) return "";
-
-    string path_str = path_env;
-    stringstream ss(path_str);
-    string dir;
-
-    while (getline(ss, dir, ':')) {
-        string full_path = dir + "/" + cmd;
-        if (access(full_path.c_str(), X_OK) == 0) {
-            return full_path;
-        }
-    }
-    return ""; // not found
+  char *path_env = getenv("PATH");
+  if (!path_env) return "";
+  string path_str = path_env;
+  stringstream ss(path_str);
+  string dir;
+  while (getline(ss, dir, ':')) {
+    string full_path = dir + "/" + cmd;
+    if (access(full_path.c_str(), X_OK) == 0) return full_path;
+  }
+  return "";
 }
 
-// --------------------------------------------------
-// Type builtin implementation
-// --------------------------------------------------
-void handle_type(const string &command) {
-    // Extract name after "type "
-    string cmd = command.substr(5);
-
-    if (cmd.empty()) {
-        cout << "type: missing argument\n";
-        return;
-    }
-
-    if (is_builtin(cmd)) {
-        cout << cmd << " is a shell builtin\n";
-        return;
-    }
-
-    // Check PATH
-    string found = search_path(cmd);
-    if (!found.empty()) {
-        cout << cmd << " is " << found << "\n";
-        return;
-    }
-
-    cout << cmd << ": not found\n";
+// ------------------------ ECHO BUILTIN ------------------------
+void handle_echo(const vector<string> &args) {
+  // print everything after echo
+  for (size_t i = 1; i < args.size(); i++) {
+    cout << args[i];
+    if (i + 1 < args.size()) cout << " ";
+  }
+  cout << "\n";
 }
 
-// --------------------------------------------------
-// Handle unknown commands
-// --------------------------------------------------
-void handle_unknown(const string &cmd) {
+// ------------------------ TYPE BUILTIN ------------------------
+void handle_type(const vector<string> &args) {
+  if (args.size() < 2) {
+    cout << "type: missing argument\n";
+    return;
+  }
+  string cmd = args[1];
+  if (is_builtin(cmd)) {
+    cout << cmd << " is a shell builtin\n";
+    return;
+  }
+  string found = search_path(cmd);
+  if (!found.empty()) {
+    cout << cmd << " is " << found << "\n";
+    return;
+  }
+  cout << cmd << ": not found\n";
+}
+
+// ------------------------ EXEC ARGUMENT BUILDER ------------------------
+char** build_exec_argv(const vector<string> &args) {
+  char **argv = new char*[args.size() + 1];
+  for (size_t i = 0; i < args.size(); i++) argv[i] = strdup(args[i].c_str());
+  argv[args.size()] = NULL;
+  return argv;
+}
+
+// ------------------------ RUN EXTERNAL PROGRAM ------------------------
+void run_external(vector<string> &args) {
+  if (args.empty()) return;
+  string cmd = args[0];
+  string path = search_path(cmd);
+  if (path.empty()) {
     cout << cmd << ": command not found\n";
+    return;
+  }
+  // replace args[0] with full path
+  args[0] = path;
+  char **exec_args = build_exec_argv(args);
+  pid_t pid = fork();
+  if (pid == 0) {
+    execvp(exec_args[0], exec_args);
+    perror("execvp");  // only if exec fails
+    exit(1);
+  }
+  int status;
+  waitpid(pid, &status, 0);
+  // free strdup'd memory
+  for (size_t i = 0; exec_args[i] != NULL; i++) free(exec_args[i]);
+  delete[] exec_args;
 }
 
-// --------------------------------------------------
-// Main Loop
-// --------------------------------------------------
+// ------------------------ MAIN LOOP ------------------------
 int main() {
-    cout << unitbuf;
-    cerr << unitbuf;
-
-    while (true) {
-        cout << "$ ";
-        string command;
-        getline(cin, command);
-
-        if (command.rfind("exit", 0) == 0) {
-            break;
-        }
-        else if (command.rfind("echo ", 0) == 0) {
-            handle_echo(command);
-        }
-        else if (command.rfind("type ", 0) == 0) {
-            handle_type(command);
-        }
-        else {
-            handle_unknown(command);
-        }
-    }
+  cout << unitbuf;   // auto flush
+  cerr << unitbuf;
+  while (true) {
+    cout << "$ ";
+    string line;
+    getline(cin, line);
+    vector<string> args = tokenize(line);
+    if (args.empty()) continue;
+    string cmd = args[0];
+    if (cmd == "exit") break;
+    else if (cmd == "echo") handle_echo(args);
+    else if (cmd == "type") handle_type(args);
+    else run_external(args);
+  }
+  return 0;
 }
