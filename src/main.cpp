@@ -70,9 +70,9 @@ void handle_type(const vector<string> &args) {
 
 // ------------------------ PWD BUILTIN ------------------------
 void handle_pwd(const vector<string> &args) {
-  string cmd = "";
-  string found = search_path(cmd);
-  cout << found << "\n";
+  char buf[PATH_MAX];
+  if (getcwd(buf, sizeof(buf)) != nullptr) cout << buf << "\n";
+  else perror("pwd");
 }
 
 // ------------------------ EXEC ARGUMENT BUILDER ------------------------
