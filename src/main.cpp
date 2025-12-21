@@ -70,8 +70,8 @@ void handle_type(const vector<string> &args) {
 
 // ------------------------ PWD BUILTIN ------------------------
 void handle_pwd(const vector<string> &args) {
-  char buf[PATH_MAX];
-  if (getcwd(buf, sizeof(buf)) != nullptr) cout << buf << "\n";
+  char *buf = getcwd(nullptr, 0);
+  if (buf) {cout << buf << "\n"; free(buf);}
   else perror("pwd");
 }
 
