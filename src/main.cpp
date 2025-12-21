@@ -8,7 +8,7 @@
 using namespace std;
 
 // ------------------------ BUILTINS ------------------------
-vector<string> builtins = {"exit", "echo", "type"};
+vector<string> builtins = {"exit", "echo", "type", "pwd"};
 
 bool is_builtin(const string &cmd) {
   for (const string &b : builtins)
@@ -68,6 +68,13 @@ void handle_type(const vector<string> &args) {
   cout << cmd << ": not found\n";
 }
 
+// ------------------------ PWD BUILTIN ------------------------
+void handle_pwd(const vector<string> &args) {
+  string cmd = "";
+  string found = search_path(cmd);
+  cout << found << "\n";
+}
+
 // ------------------------ EXEC ARGUMENT BUILDER ------------------------
 char** build_exec_argv(const vector<string> &args) {
   char **argv = new char*[args.size() + 1];
@@ -113,6 +120,7 @@ int main() {
     if (cmd == "exit") break;
     else if (cmd == "echo") handle_echo(args);
     else if (cmd == "type") handle_type(args);
+    else if (cmd == "pwd") handle_pwd(args);
     else run_external(args);
   }
   return 0;
